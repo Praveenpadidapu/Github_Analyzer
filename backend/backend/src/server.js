@@ -19,7 +19,7 @@ app.use(
 app.use(express.json()); // Allows backend to read JSON data
 
 // Routes
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/github", githubRoutes);
 
 // Basic Test Route

@@ -34,9 +34,17 @@ router.get("/github/callback", async (req, res) => {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    // Redirect back to Frontend with the token (for now)
-    // In production, you would save this to a database/cookie
-    res.redirect(`http://localhost:3000/dashboard?token=${accessToken}`);
+    // FIX: Extract specific user data to send to frontend
+    const userData = {
+      login: userResponse.data.login,
+      avatar_url: userResponse.data.avatar_url,
+      id: userResponse.data.id
+    };
+
+    // Redirect to Frontend with both token and user data stringified
+    const userParam = encodeURIComponent(JSON.stringify(userData));
+    res.redirect(`http://localhost:3000/dashboard?token=${accessToken}&user=${userParam}`);
+    
   } catch (error) {
     console.error("Auth Error:", error);
     res.status(500).send("Authentication Failed");
