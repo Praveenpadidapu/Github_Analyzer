@@ -41,7 +41,7 @@ router.get("/github/callback", async (req, res) => {
 
     // ✅ FIX: Use the correct variable names in the redirect string
     // We use accessToken and user.login
-    res.redirect("https://project-theta-self-48.vercel.app/dashboard?token=" + token);
+    res.redirect(`https://project-theta-self-48.vercel.app/dashboard?token=${token}`);
     
   } catch (error) {
     console.error("Auth Error:", error.response ? error.response.data : error.message);
