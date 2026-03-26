@@ -10,6 +10,7 @@ router.get("/github", (req, res) => {
 });
 
 // 2. GitHub Callback Handler
+// 2. GitHub Callback Handler
 router.get("/github/callback", async (req, res) => {
   const code = req.query.code;
 
@@ -25,7 +26,6 @@ router.get("/github/callback", async (req, res) => {
       { headers: { Accept: "application/json" } }
     );
 
-    // ✅ Define it clearly here
     const accessToken = tokenResponse.data.access_token;
 
     if (!accessToken) {
@@ -37,11 +37,8 @@ router.get("/github/callback", async (req, res) => {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    const user = userResponse.data;
-
-    // ✅ FIX: Use the correct variable names in the redirect string
-    // We use accessToken and user.login
-    res.redirect(`https://project-theta-self-48.vercel.app/dashboard?token=${token}`);
+    // ✅ FIX: Use accessToken (the variable you defined above) in the redirect
+    res.redirect(`https://project-theta-self-48.vercel.app/dashboard?token=${accessToken}`);
     
   } catch (error) {
     console.error("Auth Error:", error.response ? error.response.data : error.message);
