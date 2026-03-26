@@ -2,11 +2,9 @@ const express = require("express");
 const axios = require("axios");
 const router = express.Router();
 
-const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-
 // 1. Redirect to GitHub login
 router.get("/github", (req, res) => {
+  const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
   const url = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo,user`;
   res.redirect(url);
 });
@@ -20,33 +18,33 @@ router.get("/github/callback", async (req, res) => {
     const tokenResponse = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
         code: code,
       },
       { headers: { Accept: "application/json" } }
     );
 
+    // ✅ Define it clearly here
     const accessToken = tokenResponse.data.access_token;
+
+    if (!accessToken) {
+        return res.status(400).send("Failed to get access token from GitHub");
+    }
 
     // Fetch User Profile using the token
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    // FIX: Extract specific user data to send to frontend
-    const userData = {
-      login: userResponse.data.login,
-      avatar_url: userResponse.data.avatar_url,
-      id: userResponse.data.id
-    };
+    const user = userResponse.data;
 
-    // Redirect to Frontend with both token and user data stringified
-    const userParam = encodeURIComponent(JSON.stringify(userData));
-    res.redirect(`http://localhost:3000/dashboard?token=${accessToken}&user=${userParam}`);
+    // ✅ FIX: Use the correct variable names in the redirect string
+    // We use accessToken and user.login
+    res.redirect(`http://localhost:3000/dashboard?token=${accessToken}&username=${user.login}`);
     
   } catch (error) {
-    console.error("Auth Error:", error);
+    console.error("Auth Error:", error.response ? error.response.data : error.message);
     res.status(500).send("Authentication Failed");
   }
 });

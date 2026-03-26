@@ -15,6 +15,19 @@ import AIArchive from "@/components/Dashboard/AIArchive";
 import { FiZap, FiActivity, FiGithub, FiLayers, FiBarChart2, FiCheckCircle, FiInfo } from "react-icons/fi";
 
 export default function Dashboard() {
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  if (token) {
+    localStorage.setItem("github_token", token);
+    // Remove the token from the URL for security
+    window.history.replaceState({}, document.title, "/dashboard");
+  } else if (!localStorage.getItem("github_token")) {
+    // If no token in URL and no token in storage, go back to login
+    window.location.href = "/";
+  }
+}, []);
   const searchParams = useSearchParams();
   const router = useRouter();
   
