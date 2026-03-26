@@ -3,9 +3,8 @@ import { FiGithub, FiZap, FiShield, FiBarChart2 } from "react-icons/fi";
 
 export default function LoginPage() {
   const handleLogin = () => {
-    //window.location.href = "http://localhost:5000/auth/github";
+    // Correctly pointing to your live Render backend
     window.location.href = "https://project-fwvg.onrender.com/auth/github";
-    
   };
 
   return (
