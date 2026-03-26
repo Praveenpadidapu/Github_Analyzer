@@ -12,7 +12,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://project-theta-self-48.vercel.app"],
     credentials: true,
   })
 );
