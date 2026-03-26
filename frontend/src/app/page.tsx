@@ -5,7 +5,7 @@ export default function LoginPage() {
   const handleLogin = () => {
     //window.location.href = "http://localhost:5000/auth/github";
     window.location.href = "https://project-fwvg.onrender.com/auth/github";
-  };
+    
   };
 
   return (
