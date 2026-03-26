@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 
@@ -14,20 +14,8 @@ import AIArchive from "@/components/Dashboard/AIArchive";
 // Icons
 import { FiZap, FiActivity, FiGithub, FiLayers, FiBarChart2, FiCheckCircle, FiInfo } from "react-icons/fi";
 
-export default function Dashboard() {
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-
-  if (token) {
-    localStorage.setItem("github_token", token);
-    // Remove the token from the URL for security
-    window.history.replaceState({}, document.title, "/dashboard");
-  } else if (!localStorage.getItem("github_token")) {
-    // If no token in URL and no token in storage, go back to login
-    window.location.href = "/";
-  }
-}, []);
+// 1. Define the actual Dashboard Logic in a separate component
+function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -38,13 +26,26 @@ export default function Dashboard() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiReport, setAiReport] = useState<any>(null);
 
+  // Define API Base URL - Use the Render URL you added to Vercel
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      localStorage.setItem("github_token", token);
+      window.history.replaceState({}, document.title, "/dashboard");
+    } else if (!localStorage.getItem("github_token")) {
+      window.location.href = "/";
+    }
+    initDashboard();
+  }, []);
+
   const initDashboard = async () => {
     const token = localStorage.getItem("github_token") || searchParams.get("token");
-    if (token) localStorage.setItem("github_token", token);
-    if (!token) return router.push("/");
+    if (!token) return;
 
     try {
-      const res = await axios.get("http://localhost:5000/api/github/data", {
+      const res = await axios.get(`${API_BASE_URL}/api/github/data`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setData(res.data);
@@ -58,7 +59,7 @@ export default function Dashboard() {
 
   const fetchAIHistory = async (githubId: string) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/github/history?github_id=${githubId}`);
+      const res = await axios.get(`${API_BASE_URL}/api/github/history?github_id=${githubId}`);
       setReports(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("History Fetch Error", err);
@@ -68,7 +69,7 @@ export default function Dashboard() {
   const handleDeleteReport = async (id: number) => {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/github/history/${id}`);
+      await axios.delete(`${API_BASE_URL}/api/github/history/${id}`);
       setReports((prev) => prev.filter((r) => r.id !== id));
       if (aiReport?.id === id) setAiReport(null);
     } catch (err) {
@@ -77,7 +78,6 @@ export default function Dashboard() {
   };
 
   const handleViewReport = (report: any) => {
-    // Parse suggestions if they were stored as a string in DB
     const formattedReport = {
         ...report,
         suggestions: typeof report.suggestions === 'string' ? JSON.parse(report.suggestions) : report.suggestions
@@ -86,44 +86,40 @@ export default function Dashboard() {
     setActiveTab("analytics");
   };
 
-  useEffect(() => {
-    initDashboard();
-  }, []);
-
- const handleRunAI = async () => {
-  const token = localStorage.getItem("github_token"); // Get saved token
-  
-  try {
-    const res = await axios.post("http://localhost:5000/api/github/analyze", {
-      repoName: data.activeRepo.name,
-      github_id: data.user.id,
-      owner: data.activeRepo.owner.login
-    }, {
-      headers: { Authorization: `Bearer ${token}` } // MUST INCLUDE THIS
-    });
-    
-    setAiReport(res.data);
-    fetchAIHistory(data.user.id);
-  } catch (err) {
-    console.error("AI Analysis Failed", err);
-  }
-};
+  const handleRunAI = async () => {
+    setLoadingAI(true);
+    const token = localStorage.getItem("github_token");
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/github/analyze`, {
+        repoName: data.activeRepo.name,
+        github_id: data.user.id,
+        owner: data.activeRepo.owner.login
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAiReport(res.data);
+      fetchAIHistory(data.user.id);
+    } catch (err) {
+      console.error("AI Analysis Failed", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
   const handleRepoSelect = async (repoName: string) => {
-  setLoading(true);
-  const token = localStorage.getItem("github_token");
-  try {
-    const res = await axios.get(`http://localhost:5000/api/github/data?repo=${repoName}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    // This updates 'data' which contains the new 'analytics'
-    setData(res.data); 
-    setAiReport(null); // Clear old report when switching repos
-    setActiveTab("analytics");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    const token = localStorage.getItem("github_token");
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/github/data?repo=${repoName}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setData(res.data); 
+      setAiReport(null);
+      setActiveTab("analytics");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading || !data) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#020617]">
@@ -137,12 +133,9 @@ export default function Dashboard() {
   return (
     <div className="flex bg-[#020617] min-h-screen text-white overflow-hidden">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
       <main className="flex-1 h-screen overflow-y-auto custom-scrollbar">
         <Header user={data?.user} />
-
         <div className="p-8 max-w-7xl mx-auto">
-          
           {activeTab === "overview" && (
             <div className="space-y-8 animate-in fade-in duration-700">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -151,19 +144,13 @@ export default function Dashboard() {
                 <StatsCard title="Public Gists" value={data.user.public_gists} type="gists" />
                 <StatsCard title="Health Score" value="88%" type="score" />
               </div>
-
               <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <FiBarChart2 className="text-indigo-400" /> Platform Wide Tech Stack
                 </h3>
                 <Charts analytics={data.analytics} />
               </div>
-
-              <AIArchive 
-                reports={reports} 
-                onDelete={handleDeleteReport} 
-                onView={handleViewReport} 
-              />
+              <AIArchive reports={reports} onDelete={handleDeleteReport} onView={handleViewReport} />
             </div>
           )}
 
@@ -177,7 +164,6 @@ export default function Dashboard() {
 
           {activeTab === "analytics" && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-              {/* Repository Banner */}
               <div className="bg-gradient-to-br from-indigo-950/50 to-transparent p-8 rounded-[2rem] border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -186,7 +172,6 @@ export default function Dashboard() {
                   </div>
                   <p className="text-sm text-gray-400 line-clamp-2 max-w-2xl">{data.activeRepo?.description || "No description provided for this repository."}</p>
                 </div>
-                
                 <button 
                   onClick={handleRunAI}
                   disabled={loadingAI}
@@ -197,11 +182,8 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* AI Insight Section */}
               {aiReport && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                  
-                  {/* Score & Logic Breakdown */}
                   <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10 flex flex-col">
                     <div className="text-center mb-6">
                         <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Health Score</span>
@@ -210,20 +192,17 @@ export default function Dashboard() {
                             <div className="h-full bg-indigo-500" style={{ width: `${aiReport.health_score || aiReport.healthScore}%` }}></div>
                         </div>
                     </div>
-
                     <div className="flex-1 overflow-hidden">
                         <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                             <FiInfo size={10} /> Score Calculation
                         </h4>
                         <div className="space-y-3 h-32 overflow-y-auto pr-2 custom-scrollbar text-[11px] text-gray-400 italic">
-                            <p className="border-l-2 border-indigo-500/30 pl-2">Calculated from <b>Tech Stack Diversity</b>: {data.analytics.languages.length} languages detected.</p>
-                            <p className="border-l-2 border-indigo-500/30 pl-2">Weighted by <b>Commit Frequency</b>: analyzed across {data.analytics.commits.length} time slots.</p>
-                            <p className="border-l-2 border-indigo-500/30 pl-2">Includes <b>Repository Metadata</b>: stars, forks, and description quality checked.</p>
+                            <p className="border-l-2 border-indigo-500/30 pl-2">Calculated from <b>Tech Stack Diversity</b>.</p>
+                            <p className="border-l-2 border-indigo-500/30 pl-2">Weighted by <b>Commit Frequency</b>.</p>
                         </div>
                     </div>
                   </div>
 
-                  {/* Summary & Recommendations */}
                   <div className="lg:col-span-2 space-y-4">
                     <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10">
                         <h3 className="text-xs font-bold text-indigo-300 mb-3 flex items-center gap-2">
@@ -233,18 +212,12 @@ export default function Dashboard() {
                             {aiReport.report_text || aiReport.summary}
                         </p>
                     </div>
-
                     <div className="bg-indigo-500/5 p-6 rounded-2xl border border-indigo-500/20">
                         <h3 className="text-xs font-bold text-green-400 mb-4 flex items-center gap-2">
                             <FiCheckCircle size={14} /> Optimization Suggestions
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {(aiReport.suggestions || [
-                                "Improve commit frequency to show active maintenance.",
-                                "Diversify the tech stack by implementing modern utilities.",
-                                "Update documentation to improve onboarding score.",
-                                "Refactor large files for better modularity score."
-                            ]).map((s: string, i: number) => (
+                            {(aiReport.suggestions || []).map((s: string, i: number) => (
                                 <div key={i} className="flex items-start gap-2 text-[11px] text-gray-400 bg-black/20 p-3 rounded-lg border border-white/5">
                                     <span className="text-indigo-400 font-bold">#0{i+1}</span>
                                     {s}
@@ -267,5 +240,18 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+// 2. Wrap the logic in Suspense to fix the Vercel Build error
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full flex items-center justify-center bg-[#020617]">
+        <p className="text-indigo-400 font-mono text-xs animate-pulse">Loading Dashboard Content...</p>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
