@@ -4,22 +4,22 @@
   --font-sans: "Inter", "Geist", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", monospace;
   
-  --color-background: #000000;
-  --color-foreground: #ffffff;
+  --color-background: #0B0F19;
+  --color-foreground: #F9FAFB;
   
-  --color-neon-cyan: #00f0ff;
-  --color-neon-emerald: #00ff66;
-  --color-neon-purple: #b000ff;
+  --color-accent-cyan: #22D3EE;
+  --color-accent-purple: #8B5CF6;
+  --color-accent-blue: #3B82F6;
 
-  --color-surface: #0a0a0a;
-  --color-surface-hover: #141414;
-  --color-border: #1a1a1a;
+  --color-surface: #111827;
+  --color-surface-hover: #1F2937;
+  --color-border: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
   :root {
-    --background: #000000;
-    --foreground: #ffffff;
+    --background: #0B0F19;
+    --foreground: #F9FAFB;
   }
   
   body {
@@ -30,7 +30,7 @@
   }
 }
 
-/* Custom Cyber Scrollbar */
+/* Minimal Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -41,18 +41,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1a1a1a;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333333;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Base utility classes for the new theme */
 @layer utilities {
   .glass-panel {
-    @apply bg-[#050505] border border-[#222];
+    @apply bg-[#111827]/70 backdrop-blur-xl border border-white/5 shadow-2xl;
   }
   
   /* Text Balance Utility */

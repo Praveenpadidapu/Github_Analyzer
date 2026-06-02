@@ -20,10 +20,17 @@ export async function GET(req: NextRequest) {
       const langRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/languages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      analytics.languages = Object.entries(langRes.data).map(([name, value]) => ({
-        name,
-        value
-      }));
+      const langData = langRes.data as Record<string, number>;
+      const totalBytes = Object.values(langData).reduce((acc, val) => acc + val, 0);
+      
+      analytics.languages = Object.entries(langData)
+        .map(([name, value]) => ({
+          name,
+          value,
+          percentage: totalBytes > 0 ? ((value / totalBytes) * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5); // Keep top 5 for clean UI
     } catch (e) {
       console.warn("Could not fetch languages for this repo.");
     }

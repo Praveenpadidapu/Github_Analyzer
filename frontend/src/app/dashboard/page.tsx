@@ -181,7 +181,7 @@ function DashboardContent() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onSettingsClick={() => setIsSettingsOpen(true)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       
-      <main className="md:pl-20 flex-1 flex flex-col relative z-10 min-h-screen">
+      <main className="md:pl-16 flex-1 flex flex-col relative z-10 min-h-screen bg-[#0B0F19]">
         <Header user={data.user} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         
         <div className="p-6 md:p-10 max-w-7xl w-full mx-auto space-y-8">
@@ -193,16 +193,12 @@ function DashboardContent() {
                 <StatsCard title="Public Gists" value={data.user.public_gists} type="gists" />
                 <StatsCard title="Health Score" value="88%" type="score" />
               </div>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FiBarChart2 className="text-indigo-400" /> Platform Wide Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Charts analytics={data.analytics} />
-                </CardContent>
-              </Card>
+              <div className="bg-[#111827] border border-white/5 rounded-2xl p-6">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-6">
+                  <FiBarChart2 className="text-[#22D3EE]" /> Platform Wide Activity
+                </h3>
+                <Charts analytics={data.analytics} />
+              </div>
               <AIArchive reports={reports} onDelete={handleDeleteReport} onView={handleViewReport} />
             </div>
           )}
@@ -227,86 +223,87 @@ function DashboardContent() {
 
           {activeTab === "analytics" && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-              <Card className="bg-gradient-to-br from-indigo-900/40 via-slate-900/40 to-transparent border-indigo-500/20">
-                <CardContent className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+              <div className="relative overflow-hidden rounded-3xl bg-[#0F172A] border border-white/10 p-8 md:p-12 shadow-2xl">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#22D3EE]/10 to-[#8B5CF6]/10 opacity-50 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#22D3EE] rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#8B5CF6] rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-indigo-500/20 rounded-lg">
-                        <FiGithub className="text-indigo-400 w-6 h-6" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-[#111827] border border-white/10 rounded-xl shadow-lg">
+                        <FiGithub className="text-white w-6 h-6" />
                       </div>
-                      <h2 className="text-3xl font-black tracking-tight">{data.activeRepo?.name}</h2>
+                      <h2 className="text-4xl font-bold tracking-tight text-white">{data.activeRepo?.name}</h2>
                     </div>
-                    <p className="text-slate-400 max-w-2xl mt-2">{data.activeRepo?.description || "No description provided for this repository."}</p>
+                    <p className="text-gray-400 max-w-2xl text-lg mb-6">{data.activeRepo?.description || "No description provided for this repository."}</p>
+                    <Button 
+                      size="lg"
+                      onClick={handleRunAI}
+                      disabled={loadingAI}
+                      className="bg-white text-black hover:bg-gray-200 transition-colors px-8 shadow-[0_0_20px_rgba(255,255,255,0.3)] font-medium"
+                    >
+                      <FiZap className={loadingAI ? "animate-spin mr-2" : "text-[#8B5CF6] mr-2"} />
+                      {loadingAI ? "Analyzing..." : "Generate AI Insights"}
+                    </Button>
                   </div>
-                  <Button 
-                    size="lg"
-                    onClick={handleRunAI}
-                    disabled={loadingAI}
-                  >
-                    <FiZap className={loadingAI ? "animate-spin" : "text-yellow-400"} />
-                    {loadingAI ? "Analyzing..." : "Generate AI Insights"}
-                  </Button>
-                </CardContent>
-              </Card>
+                  
+                  {aiReport && (
+                    <div className="w-full md:w-64 bg-[#111827]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center shadow-2xl">
+                      <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-4 block">Repository Health</span>
+                      <div className="relative flex items-center justify-center w-40 h-40 mx-auto">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradientScore)" strokeWidth="8" strokeDasharray={`${(aiReport.health_score || aiReport.healthScore || 0) * 2.83} 283`} className="transition-all duration-1000 ease-out" />
+                          <defs>
+                            <linearGradient id="gradientScore" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#22D3EE" />
+                              <stop offset="100%" stopColor="#8B5CF6" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute flex flex-col items-center justify-center">
+                          <span className="text-5xl font-black text-white">{aiReport.health_score || aiReport.healthScore || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {aiReport && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <Card className="flex flex-col border-indigo-500/30 shadow-[0_0_40px_-10px_rgba(99,102,241,0.2)]">
-                    <CardContent className="p-8 flex-1 flex flex-col items-center justify-center text-center">
-                        <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold mb-4">Health Score</span>
-                        <div className="relative flex items-center justify-center w-40 h-40">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${(aiReport.health_score || aiReport.healthScore || 0) * 2.83} 283`} className="text-indigo-500 transition-all duration-1000 ease-out" />
-                          </svg>
-                          <div className="absolute flex flex-col items-center justify-center">
-                            <span className="text-5xl font-black text-slate-100">{aiReport.health_score || aiReport.healthScore || 0}</span>
-                            <span className="text-xs text-slate-400 mt-1">/ 100</span>
-                          </div>
-                        </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="lg:col-span-2 flex flex-col gap-6">
-                    <Card className="flex-1">
-                      <CardContent className="p-6">
-                        <h3 className="text-sm font-bold text-indigo-400 mb-3 flex items-center gap-2">
-                            <FiActivity className="w-4 h-4" /> Executive Summary
-                        </h3>
-                        <p className="text-base text-slate-300 leading-relaxed">
-                            {aiReport.report_text || aiReport.summary}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-emerald-500/5 border-emerald-500/20">
-                      <CardContent className="p-6">
-                        <h3 className="text-sm font-bold text-emerald-400 mb-4 flex items-center gap-2">
-                            <FiCheckCircle className="w-4 h-4" /> Optimization Suggestions
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {(aiReport.suggestions || []).map((s: string, i: number) => (
-                                <div key={i} className="flex items-start gap-3 bg-black/40 p-4 rounded-xl border border-white/[0.05]">
-                                    <span className="text-emerald-500 font-bold text-sm bg-emerald-500/10 w-6 h-6 flex items-center justify-center rounded-md shrink-0">{i+1}</span>
-                                    <span className="text-sm text-slate-300">{s}</span>
-                                </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="glass-panel p-8 rounded-2xl relative overflow-hidden">
+                    <h3 className="text-sm font-bold text-[#22D3EE] mb-4 flex items-center gap-2">
+                        <FiActivity className="w-4 h-4" /> Executive Summary
+                    </h3>
+                    <p className="text-base text-gray-300 leading-relaxed relative z-10">
+                        {aiReport.report_text || aiReport.summary}
+                    </p>
+                  </div>
+                  <div className="glass-panel p-8 rounded-2xl relative overflow-hidden border-[#8B5CF6]/30">
+                    <h3 className="text-sm font-bold text-[#8B5CF6] mb-6 flex items-center gap-2">
+                        <FiCheckCircle className="w-4 h-4" /> Strategic Recommendations
+                    </h3>
+                    <div className="space-y-4 relative z-10">
+                        {(aiReport.suggestions || []).map((s: string, i: number) => (
+                            <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-[#0B0F19]/50 border border-white/5 hover:border-white/10 transition-colors">
+                                <span className="text-[#8B5CF6] font-bold text-sm bg-[#8B5CF6]/10 w-6 h-6 flex items-center justify-center rounded-md shrink-0">{i+1}</span>
+                                <span className="text-sm text-gray-300 leading-relaxed">{s}</span>
+                            </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
               )}
               
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FiBarChart2 className="text-indigo-400" /> Active Repo Insights
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Charts analytics={data.analytics} />
-                </CardContent>
-              </Card>
+              <div className="bg-[#111827] border border-white/5 rounded-2xl p-6 mt-8">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-6">
+                  <FiBarChart2 className="text-[#22D3EE]" /> Active Repo Insights
+                </h3>
+                <Charts analytics={data.analytics} />
+              </div>
             </div>
           )}
         </div>
