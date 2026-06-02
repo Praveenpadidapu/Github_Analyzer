@@ -38,7 +38,7 @@ export default function Sidebar({ activeTab, setActiveTab, onSettingsClick }: an
       {/* Bottom Actions */}
       <div className="mt-auto flex flex-col gap-4 w-full px-2">
         <button 
-          onClick={onSettingsClick}
+          onClick={() => { window.location.href = "/dashboard/settings" }}
           title="Settings" 
           className="w-full aspect-square rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-all group relative"
         >
