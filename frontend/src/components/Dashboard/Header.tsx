@@ -2,7 +2,7 @@
 import { FiBell, FiSearch, FiCommand, FiChevronDown } from "react-icons/fi";
 import { useState } from "react";
 
-export default function Header({ user }: { user: any }) {
+export default function Header({ user, searchQuery, setSearchQuery }: { user: any, searchQuery?: string, setSearchQuery?: (q: string) => void }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
@@ -12,7 +12,9 @@ export default function Header({ user }: { user: any }) {
         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#808080] w-4 h-4" />
         <input 
           type="text" 
-          placeholder="Search repositories, issues, or command..." 
+          value={searchQuery || ""}
+          onChange={(e) => setSearchQuery && setSearchQuery(e.target.value)}
+          placeholder="Search repositories..." 
           className="w-full bg-[#111] border border-[#222] rounded-xl py-2 pl-10 pr-12 text-sm text-[#fff] focus:outline-none focus:border-[#00f0ff] focus:ring-1 focus:ring-[#00f0ff] transition-all placeholder:text-[#555]"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">

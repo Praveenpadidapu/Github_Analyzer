@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // 2. Fetch recent commits for context
     let commitData = [];
     try {
-      const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=10`, {
+      const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=15`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       commitData = commitsRes.data.map((c: any) => ({
@@ -40,8 +40,19 @@ export async function POST(req: NextRequest) {
       console.warn("Could not fetch commits for AI analysis");
     }
 
+    // 2.5 Fetch Language data for context
+    let languageData = {};
+    try {
+      const langRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/languages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      languageData = langRes.data;
+    } catch(e) {
+      console.warn("Could not fetch language stats");
+    }
+
     // 3. Call Actual AI Service
-    const aiResult = await generateRepoReport(repoData, commitData);
+    const aiResult = await generateRepoReport(repoData, commitData, languageData);
     const { healthScore, summary, suggestions } = aiResult;
 
     // 4. Save to Database

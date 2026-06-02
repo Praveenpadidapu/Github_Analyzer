@@ -61,7 +61,7 @@ export default function Charts({ analytics }: { analytics: any }) {
       {/* Commit Frequency Bar Chart */}
       <div className="h-80 bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl p-6 relative group hover:border-[#00ff66]/30 transition-all duration-300">
         <h4 className="text-xs font-bold text-[#808080] uppercase tracking-widest absolute top-6 left-6 group-hover:text-[#00ff66] transition-colors">
-          Commit Activity (30 Days)
+          Commit Activity (12 Months)
         </h4>
         <ResponsiveContainer width="100%" height="100%" className="mt-8">
           <BarChart data={analytics.commits.slice(-30)} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>

@@ -52,15 +52,7 @@
 /* Base utility classes for the new theme */
 @layer utilities {
   .glass-panel {
-    @apply bg-[#050505]/80 backdrop-blur-2xl border border-white/5;
-  }
-  
-  .neon-glow-cyan {
-    box-shadow: 0 0 20px -5px rgba(0, 240, 255, 0.4);
-  }
-
-  .neon-text-cyan {
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    @apply bg-[#050505] border border-[#222];
   }
   
   /* Text Balance Utility */

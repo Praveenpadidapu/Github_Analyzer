@@ -11,6 +11,7 @@ import StatsCard from "@/components/Dashboard/StatsCard";
 import RepoCard from "@/components/Dashboard/RepoCard";
 import Charts from "@/components/Dashboard/Charts";
 import AIArchive from "@/components/Dashboard/AIArchive";
+import SettingsModal from "@/components/Dashboard/SettingsModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
@@ -27,6 +28,8 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiReport, setAiReport] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -168,16 +171,18 @@ function DashboardContent() {
     </div>
   );
 
+  const filteredRepos = data?.repos?.filter((repo: any) => 
+    repo.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) || [];
+
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden font-sans">
-      {/* Deep Space Background Effects */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#00f0ff]/5 rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#00ff66]/5 rounded-full blur-[150px] pointer-events-none"></div>
+    <div className="min-h-screen bg-[#000000] text-white relative font-sans">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onSettingsClick={() => setIsSettingsOpen(true)} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <main className="md:pl-32 flex-1 flex flex-col relative z-10 min-h-screen">
-        <Header user={data.user} />
+      <main className="md:pl-20 flex-1 flex flex-col relative z-10 min-h-screen">
+        <Header user={data.user} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         
         <div className="p-6 md:p-10 max-w-7xl w-full mx-auto space-y-8">
           {activeTab === "overview" && (
@@ -203,10 +208,20 @@ function DashboardContent() {
           )}
 
           {activeTab === "repos" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in duration-300">
-              {data.repos.map((repo: any) => (
-                <RepoCard key={repo.id} repo={repo} onSelect={() => handleRepoSelect(repo.name)} />
-              ))}
+            <div className="space-y-6">
+              {searchQuery && (
+                <p className="text-sm text-[#808080] font-mono">Found {filteredRepos.length} results for "{searchQuery}"</p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in duration-300">
+                {filteredRepos.map((repo: any) => (
+                  <RepoCard key={repo.id} repo={repo} onSelect={() => handleRepoSelect(repo.name)} />
+                ))}
+                {filteredRepos.length === 0 && (
+                  <div className="col-span-full py-12 text-center border border-dashed border-[#222] rounded-2xl bg-[#050505]">
+                    <p className="text-[#808080] text-sm font-mono uppercase tracking-widest">No repositories match your search.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

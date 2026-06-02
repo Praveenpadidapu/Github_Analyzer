@@ -28,24 +28,39 @@ export async function GET(req: NextRequest) {
       console.warn("Could not fetch languages for this repo.");
     }
 
-    // 2. FETCH COMMITS (Last 100 for better heatmap)
+    // 2. FETCH COMMITS (Last 12 months)
     try {
-      const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=100`, {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?since=${oneYearAgo.toISOString()}&per_page=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Aggregate commits by day
-      const commitCounts: any = {};
+      // Aggregate commits by month
+      const commitCounts: Record<string, number> = {};
+      
+      // Initialize last 12 months with 0
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthKey = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        commitCounts[monthKey] = 0;
+      }
+
       commitsRes.data.forEach((c: any) => {
-        const date = new Date(c.commit.author.date).toISOString().split('T')[0];
-        commitCounts[date] = (commitCounts[date] || 0) + 1;
+        const date = new Date(c.commit.author.date);
+        const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        if (commitCounts[monthKey] !== undefined) {
+          commitCounts[monthKey]++;
+        }
       });
       
-      analytics.commits = Object.keys(commitCounts).map(date => ({
-        day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-        date,
-        count: commitCounts[date]
-      })).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) as any;
+      analytics.commits = Object.keys(commitCounts).map(monthKey => ({
+        day: monthKey.split(' ')[0], // Just use the short month name (Jan, Feb)
+        date: monthKey,
+        count: commitCounts[monthKey]
+      }));
       
     } catch (e) {
       console.warn("Could not fetch commits for this repo.");
