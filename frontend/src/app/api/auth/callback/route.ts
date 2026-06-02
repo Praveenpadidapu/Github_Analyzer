@@ -27,9 +27,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Redirect back to dashboard with token
-    // In Next.js, we can derive the base URL from the request if NEXT_PUBLIC_API_URL isn't set
-    const origin = process.env.NEXT_PUBLIC_API_URL || req.nextUrl.origin;
-    return NextResponse.redirect(`${origin}/dashboard?token=${accessToken}`);
+    // Using robust URL cloning guarantees it works locally and on any Vercel domain automatically
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = '/dashboard';
+    redirectUrl.searchParams.set('token', accessToken);
+    redirectUrl.searchParams.delete('code'); // clean up the code param
+    
+    return NextResponse.redirect(redirectUrl);
     
   } catch (error: any) {
     console.error("Auth Error:", error.response ? error.response.data : error.message);
