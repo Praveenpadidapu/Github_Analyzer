@@ -1,75 +1,58 @@
 "use client";
-import { FiGithub, FiZap, FiShield, FiBarChart2 } from "react-icons/fi";
+import { FiGithub, FiZap, FiShield, FiActivity } from "react-icons/fi";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
 export default function LoginPage() {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
   const handleLogin = () => {
-    window.location.href = `${API_BASE_URL}/auth/github`;
+    // Uses Next.js API Routes (no more Render delay)
+    window.location.href = `/api/auth/github`;
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 flex items-center justify-center overflow-hidden">
-      {/* Background Animated Glows */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="relative min-h-screen bg-black flex flex-col items-center justify-center overflow-hidden font-sans">
+      {/* Pitch Black Theme - Cyber Glows */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#00f0ff]/10 rounded-full blur-[150px] animate-pulse pointer-events-none"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#00ff66]/5 rounded-full blur-[150px] pointer-events-none"></div>
 
-      <div className="relative z-10 max-w-5xl w-full px-6 flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-        {/* Left Side: Branding */}
-        <div className="flex-1 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono mb-8 font-semibold tracking-wide shadow-[0_0_20px_-5px_rgba(99,102,241,0.3)]">
-            <FiZap className="animate-pulse" /> AI-POWERED CODE INTELLIGENCE
-          </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-100 leading-[1.1] mb-6 tracking-tight">
-            Dev<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Insight</span> AI
-          </h1>
-          <p className="text-slate-400 text-lg sm:text-xl mb-10 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium">
-            The ultimate engineering dashboard. Analyze repository health, track commit frequency, and get actionable AI-generated insights for your GitHub profile.
-          </p>
-          
-          <div className="grid grid-cols-2 gap-6 max-w-md mx-auto lg:mx-0">
-            <div className="flex items-center justify-center lg:justify-start gap-3 text-sm font-semibold text-slate-300">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <FiShield className="text-emerald-400 w-5 h-5" />
-              </div>
-              Secure OAuth
-            </div>
-            <div className="flex items-center justify-center lg:justify-start gap-3 text-sm font-semibold text-slate-300">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <FiBarChart2 className="text-blue-400 w-5 h-5" />
-              </div>
-              Real-time Analytics
-            </div>
-          </div>
+      {/* Grid Lines */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none"></div>
+
+      <div className="relative z-10 w-full max-w-7xl px-6 flex flex-col items-center">
+        {/* Top Floating Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#00f0ff] text-xs font-mono mb-10 tracking-widest neon-glow-cyan uppercase">
+          <FiZap className="w-3 h-3" /> Next-Gen Developer Intelligence
         </div>
 
-        {/* Right Side: Login Card */}
-        <div className="w-full max-w-md">
-          <Card className="border-indigo-500/20 shadow-[0_0_50px_-12px_rgba(99,102,241,0.15)] bg-slate-900/50 backdrop-blur-2xl">
-            <CardContent className="p-8 sm:p-10 flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/25">
-                <FiGithub className="text-white w-8 h-8" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-100 text-center mb-2">Welcome Back</h2>
-              <p className="text-slate-400 text-center text-sm mb-8 font-medium">Connect your GitHub workspace to begin</p>
-              
-              <Button 
-                onClick={handleLogin}
-                size="lg"
-                className="w-full h-14 text-base font-bold shadow-indigo-500/25"
-              >
-                <FiGithub className="w-5 h-5 mr-2" />
-                Continue with GitHub
-              </Button>
+        {/* Hero Text */}
+        <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white leading-[1.1] mb-6 tracking-tighter text-center">
+          Dev<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#00ff66] neon-text-cyan">Insight</span>
+        </h1>
+        <p className="text-[#a0a0a0] text-lg sm:text-xl mb-12 leading-relaxed max-w-2xl text-center font-medium">
+          Zero latency. Instant analytics. Analyze your repository health, track commit frequency, and get actionable AI insights for your GitHub profile.
+        </p>
+        
+        {/* Login Card */}
+        <Card className="w-full max-w-md glass-panel border-[#1a1a1a] shadow-[0_0_50px_-10px_rgba(0,240,255,0.1)] relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f0ff] to-[#00ff66]"></div>
+          <CardContent className="p-8 sm:p-10 flex flex-col items-center">
+            <h2 className="text-2xl font-bold text-white text-center mb-8">Authenticate</h2>
+            
+            <Button 
+              onClick={handleLogin}
+              size="lg"
+              className="w-full h-14 text-base font-bold bg-white text-black hover:bg-gray-200"
+            >
+              <FiGithub className="w-5 h-5 mr-3" />
+              Continue with GitHub
+            </Button>
 
-              <p className="mt-8 text-[10px] text-center text-slate-500 uppercase tracking-widest leading-relaxed font-semibold">
-                By connecting, you agree to our <br/> Terms of Service & Privacy Policy
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="w-full flex justify-between mt-8 text-xs text-[#505050] font-mono">
+               <span className="flex items-center gap-1"><FiShield /> Secure OAuth</span>
+               <span className="flex items-center gap-1"><FiActivity /> Serverless Speed</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

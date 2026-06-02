@@ -47,11 +47,28 @@ function DashboardContent() {
     if (!token) return;
 
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/github/data`, {
+      const res = await axios.get(`/api/github/data`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setData(res.data);
-      fetchAIHistory(res.data.user.id);
+      const dashData = res.data;
+      
+      // Initially set active repo to the first one and fetch its stats
+      if (dashData.repos && dashData.repos.length > 0) {
+        const firstRepo = dashData.repos[0];
+        dashData.activeRepo = firstRepo;
+        
+        try {
+            const statsRes = await axios.get(`/api/github/repo-stats?owner=${firstRepo.owner.login}&repo=${firstRepo.name}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            dashData.analytics = statsRes.data;
+        } catch(e) {
+            dashData.analytics = { languages: [], commits: [] };
+        }
+      }
+
+      setData(dashData);
+      fetchAIHistory(dashData.user.id);
     } catch (err) {
       toast.error("Failed to load dashboard data");
       console.error("Dashboard Sync Error", err);
@@ -62,7 +79,7 @@ function DashboardContent() {
 
   const fetchAIHistory = async (githubId: string) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/github/history?github_id=${githubId}`);
+      const res = await axios.get(`/api/github/history?github_id=${githubId}`);
       setReports(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("History Fetch Error", err);
@@ -72,7 +89,7 @@ function DashboardContent() {
   const handleDeleteReport = async (id: number) => {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
     try {
-      await axios.delete(`${API_BASE_URL}/api/github/history/${id}`);
+      await axios.delete(`/api/github/history/${id}`);
       setReports((prev) => prev.filter((r) => r.id !== id));
       if (aiReport?.id === id) setAiReport(null);
       toast.success("Report deleted successfully");
@@ -95,7 +112,7 @@ function DashboardContent() {
     const token = localStorage.getItem("github_token");
     const toastId = toast.loading("Analyzing repository...");
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/github/analyze`, {
+      const res = await axios.post(`/api/github/analyze`, {
         repoName: data.activeRepo.name,
         github_id: data.user.id,
         owner: data.activeRepo.owner.login
@@ -117,10 +134,19 @@ function DashboardContent() {
     setLoading(true);
     const token = localStorage.getItem("github_token");
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/github/data?repo=${repoName}`, {
+      const selectedRepo = data.repos.find((r: any) => r.name === repoName);
+      if (!selectedRepo) return;
+      
+      const statsRes = await axios.get(`/api/github/repo-stats?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setData(res.data); 
+      
+      setData((prev: any) => ({
+        ...prev,
+        activeRepo: selectedRepo,
+        analytics: statsRes.data
+      }));
+      
       setAiReport(null);
       setActiveTab("analytics");
     } catch (e) {
@@ -143,15 +169,20 @@ function DashboardContent() {
   );
 
   return (
-    <div className="flex bg-slate-950 min-h-screen text-slate-50 overflow-hidden">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden font-sans">
+      {/* Deep Space Background Effects */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#00f0ff]/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#00ff66]/5 rounded-full blur-[150px] pointer-events-none"></div>
+      
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 h-screen overflow-y-auto custom-scrollbar relative">
-        <Header user={data?.user} />
+      
+      <main className="md:pl-32 flex-1 flex flex-col relative z-10 min-h-screen">
+        <Header user={data.user} />
         
-        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+        <div className="p-6 md:p-10 max-w-7xl w-full mx-auto space-y-8">
           {activeTab === "overview" && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard title="Repositories" value={data.repos.length} type="repos" />
                 <StatsCard title="Followers" value={data.user.followers} type="followers" />
                 <StatsCard title="Public Gists" value={data.user.public_gists} type="gists" />

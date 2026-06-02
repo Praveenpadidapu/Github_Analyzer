@@ -1,5 +1,5 @@
 "use client";
-import { FiGrid, FiCode, FiBarChart2, FiSettings, FiLogOut, FiZap } from "react-icons/fi";
+import { FiGrid, FiCode, FiSettings, FiLogOut, FiZap } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar({ activeTab, setActiveTab }: any) {
@@ -10,54 +10,56 @@ export default function Sidebar({ activeTab, setActiveTab }: any) {
   ];
 
   return (
-    <aside className="w-64 bg-white/[0.02] border-r border-white/5 flex flex-col h-screen sticky top-0 backdrop-blur-xl shrink-0 hidden md:flex">
-      <div className="p-6">
-        <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <FiZap className="text-white w-4 h-4" />
-          </div>
-          <span>Dev<span className="text-indigo-400">Insight</span></span>
-        </h1>
+    <aside className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-4 hidden md:flex">
+      {/* Brand Logo */}
+      <div className="w-12 h-12 bg-[#00f0ff]/10 rounded-full flex items-center justify-center border border-[#00f0ff]/30 neon-glow-cyan mb-4 backdrop-blur-md">
+        <FiZap className="text-[#00f0ff] w-5 h-5" />
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-1">
-        <div className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-4 mb-4">
-          Main Menu
-        </div>
+      {/* Floating Dock */}
+      <nav className="glass-panel rounded-full p-3 flex flex-col gap-3 shadow-[0_0_30px_-5px_rgba(0,240,255,0.1)]">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
+            title={item.label}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+              "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 relative group",
               activeTab === item.id 
-                ? "bg-indigo-500/10 text-indigo-400" 
-                : "text-slate-400 hover:text-slate-100 hover:bg-white/5"
+                ? "bg-[#00f0ff] text-black shadow-[0_0_15px_rgba(0,240,255,0.6)]" 
+                : "text-[#808080] hover:text-[#00f0ff] hover:bg-[#00f0ff]/10"
             )}
           >
-            <span className={cn("flex items-center justify-center", activeTab === item.id ? "text-indigo-400" : "text-slate-500")}>
-              {item.icon}
+            {item.icon}
+            {/* Tooltip */}
+            <span className="absolute left-16 bg-[#111] text-[#fff] text-xs font-bold px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-[#333] whitespace-nowrap pointer-events-none">
+              {item.label}
             </span>
-            {item.label}
           </button>
         ))}
       </nav>
 
-      <div className="p-4 mt-auto">
-        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-100 hover:bg-white/5 rounded-lg transition-all">
-            <FiSettings className="text-slate-500" /> Settings
-          </button>
-          <button 
-            onClick={() => {
-              localStorage.removeItem("github_token");
-              window.location.href = "/";
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-400/80 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-          >
-            <FiLogOut /> Logout
-          </button>
-        </div>
+      {/* Settings & Logout */}
+      <div className="glass-panel rounded-full p-3 mt-4 flex flex-col gap-3">
+        <button title="Settings" className="w-12 h-12 rounded-full flex items-center justify-center text-[#808080] hover:text-[#fff] hover:bg-white/10 transition-all group relative">
+          <FiSettings className="w-5 h-5" />
+          <span className="absolute left-16 bg-[#111] text-[#fff] text-xs font-bold px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-[#333] whitespace-nowrap pointer-events-none">
+            Settings
+          </span>
+        </button>
+        <button 
+          title="Logout"
+          onClick={() => {
+            localStorage.removeItem("github_token");
+            window.location.href = "/";
+          }}
+          className="w-12 h-12 rounded-full flex items-center justify-center text-[#ff3366] hover:bg-[#ff3366]/20 transition-all group relative"
+        >
+          <FiLogOut className="w-5 h-5" />
+          <span className="absolute left-16 bg-[#111] text-[#fff] text-xs font-bold px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-[#333] whitespace-nowrap pointer-events-none">
+            Logout
+          </span>
+        </button>
       </div>
     </aside>
   );
