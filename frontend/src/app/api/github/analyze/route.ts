@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
 
     // 3. Call Actual AI Service
     const aiResult = await generateRepoReport(repoData, commitData, languageData);
-    const { healthScore, summary, suggestions } = aiResult;
+    const health = aiResult.healthScore || aiResult.health_score || 0;
+    const reportSummary = aiResult.summary || aiResult.report_text || aiResult.reportText || "Analysis complete.";
+    const reportSuggestions = aiResult.suggestions || [];
 
     // 4. Save to Database
     const query = `
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, NOW())
       RETURNING *;
     `;
-    const values = [String(github_id), repoName, summary, healthScore, JSON.stringify(suggestions)];
+    const values = [String(github_id), repoName, reportSummary, health, JSON.stringify(reportSuggestions)];
     
     let dbResult;
     try {
@@ -72,14 +74,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         id: Date.now(), // fake ID since we couldn't save
         repo_name: repoName,
-        report_text: summary,
-        health_score: healthScore,
-        suggestions: suggestions,
+        report_text: reportSummary,
+        health_score: health,
+        suggestions: reportSuggestions,
         created_at: new Date().toISOString()
       });
     }
 
-    return NextResponse.json({ ...dbResult.rows[0], suggestions });
+    return NextResponse.json({ ...dbResult.rows[0], suggestions: reportSuggestions });
 
   } catch (err: any) {
     console.error("GitHub API Error:", err.response?.data || err.message);
