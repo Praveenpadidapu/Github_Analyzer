@@ -223,7 +223,6 @@ function DashboardContent() {
 
           {activeTab === "analytics" && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
               <div className="relative overflow-hidden rounded-3xl bg-[#0F172A] border border-white/10 p-8 md:p-12 shadow-2xl">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#22D3EE]/10 to-[#8B5CF6]/10 opacity-50 pointer-events-none"></div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#22D3EE] rounded-full mix-blend-screen filter blur-[100px] opacity-20 pointer-events-none"></div>
