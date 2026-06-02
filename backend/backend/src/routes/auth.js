@@ -37,8 +37,8 @@ router.get("/github/callback", async (req, res) => {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    // ✅ FIX: Use accessToken (the variable you defined above) in the redirect
-    res.redirect(`https://project-theta-self-48.vercel.app/dashboard?token=${accessToken}`);
+    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+    res.redirect(`${CLIENT_URL}/dashboard?token=${accessToken}`);
     
   } catch (error) {
     console.error("Auth Error:", error.response ? error.response.data : error.message);

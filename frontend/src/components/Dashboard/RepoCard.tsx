@@ -1,30 +1,32 @@
 "use client";
-import { FiStar, FiGitBranch, FiChevronRight } from "react-icons/fi";
+import { FiStar, FiGitBranch, FiChevronRight, FiCircle } from "react-icons/fi";
+import { Card, CardContent } from "@/components/ui/Card";
 
 export default function RepoCard({ repo, onSelect }: any) {
   return (
-    <div 
+    <Card 
       onClick={onSelect}
-      className="group bg-white/[0.03] border border-white/10 p-6 rounded-[2rem] hover:border-indigo-500/50 transition-all cursor-pointer relative overflow-hidden"
+      className="group cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all duration-300"
     >
-      {/* Name Truncation Fix */}
-      <h3 className="text-lg font-bold text-white truncate w-full mb-2 group-hover:text-indigo-400 transition" title={repo.name}>
-        {repo.name}
-      </h3>
-      
-      <p className="text-xs text-gray-500 line-clamp-2 h-8 mb-6">
-        {repo.description || "No description provided for this repository."}
-      </p>
+      <CardContent className="p-6 flex flex-col h-full">
+        <h3 className="text-lg font-bold text-slate-100 truncate w-full mb-2 group-hover:text-indigo-400 transition-colors" title={repo.name}>
+          {repo.name}
+        </h3>
+        
+        <p className="text-sm text-slate-400 line-clamp-2 h-10 mb-6 leading-relaxed">
+          {repo.description || "No description provided for this repository."}
+        </p>
 
-      <div className="flex items-center justify-between mt-auto">
-        <div className="flex gap-4 text-[10px] font-mono text-gray-400">
-          <span className="flex items-center gap-1"><FiStar className="text-yellow-500"/> {repo.stargazers_count}</span>
-          <span className="flex items-center gap-1"><FiGitBranch className="text-indigo-500"/> {repo.language || "Docs"}</span>
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/[0.05]">
+          <div className="flex gap-4 text-xs font-mono text-slate-500">
+            <span className="flex items-center gap-1.5"><FiStar className="text-yellow-500 w-3.5 h-3.5"/> {repo.stars || repo.stargazers_count || 0}</span>
+            <span className="flex items-center gap-1.5"><FiCircle className="text-indigo-500 w-3 h-3 fill-indigo-500"/> {repo.language || "Docs"}</span>
+          </div>
+          <div className="p-1.5 bg-slate-800 rounded-lg group-hover:bg-indigo-600 transition-colors text-slate-400 group-hover:text-white">
+            <FiChevronRight className="w-4 h-4" />
+          </div>
         </div>
-        <div className="p-2 bg-white/5 rounded-lg group-hover:bg-indigo-600 transition-colors">
-          <FiChevronRight className="text-white" />
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,49 +1,64 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const generateRepoReport = async (repoData, commitData) => {
   try {
-    // 1. Switch to 'gemini-pro' which is widely supported in all regions/versions
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // 1. Switch to 'gemini-1.5-flash' for faster and more reliable structured output
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            healthScore: {
+              type: SchemaType.INTEGER,
+              description: "A score from 0 to 100 representing the repository's health based on stars, forks, and activity."
+            },
+            procrastinationLevel: {
+              type: SchemaType.STRING,
+              description: "A string indicating procrastination level: 'Low', 'Medium', or 'High' based on commit consistency."
+            },
+            summary: {
+              type: SchemaType.STRING,
+              description: "A two-sentence executive summary of the repository status."
+            },
+            suggestions: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+              description: "An array of 3 actionable suggestions to improve the repository."
+            }
+          },
+          required: ["healthScore", "procrastinationLevel", "summary", "suggestions"]
+        }
+      }
+    });
 
     const prompt = `
-      You are an expert GitHub Auditor. Analyze this repository data and provide a JSON response.
+      You are an expert GitHub Auditor. Analyze this repository data.
       
       REPOSITORY: ${repoData.name}
       LANGUAGE: ${repoData.language || 'Unknown'}
       STATS: Stars: ${repoData.stars}, Forks: ${repoData.forks}
-      RECENT COMMITS: ${JSON.stringify(commitData.slice(0, 5))}
-
-      Return ONLY a JSON object with this exact structure:
-      {
-        "healthScore": 85,
-        "procrastinationLevel": "Low",
-        "summary": "Two sentence executive summary here.",
-        "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
-      }
+      RECENT COMMITS: ${JSON.stringify(commitData.slice(0, 10))}
     `;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
-    // 2. Robust JSON Cleaning
-    // Removes markdown backticks if the AI includes them
-    const cleanJson = text.replace(/```json|```/g, "").trim();
-    
-    return JSON.parse(cleanJson);
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Gemini AI Error Detail:", error);
+    console.error("AI Generation Error:", error);
     
-    // If 'gemini-pro' also fails, we'll return a safe mock object 
-    // so your UI doesn't break while you troubleshoot billing/keys
+    // Graceful fallback
     return {
-      healthScore: 0,
+      healthScore: 50,
       procrastinationLevel: "Unknown",
-      summary: "AI Analysis is currently unavailable. Please check API key permissions.",
-      suggestions: ["Verify GEMINI_API_KEY in .env", "Ensure @google/generative-ai is updated"]
+      summary: "AI Analysis is currently unavailable due to an API error. Please check backend logs.",
+      suggestions: ["Ensure GEMINI_API_KEY is valid", "Try again later"]
     };
   }
 };

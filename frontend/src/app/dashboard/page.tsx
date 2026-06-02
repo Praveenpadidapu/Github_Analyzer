@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { toast } from "sonner";
 
 // Components
 import Sidebar from "@/components/Dashboard/Sidebar";
@@ -10,11 +11,12 @@ import StatsCard from "@/components/Dashboard/StatsCard";
 import RepoCard from "@/components/Dashboard/RepoCard";
 import Charts from "@/components/Dashboard/Charts";
 import AIArchive from "@/components/Dashboard/AIArchive";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 // Icons
-import { FiZap, FiActivity, FiGithub, FiLayers, FiBarChart2, FiCheckCircle, FiInfo } from "react-icons/fi";
+import { FiZap, FiActivity, FiGithub, FiBarChart2, FiCheckCircle, FiInfo } from "react-icons/fi";
 
-// 1. Define the actual Dashboard Logic in a separate component
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -26,7 +28,6 @@ function DashboardContent() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiReport, setAiReport] = useState<any>(null);
 
-  // Define API Base URL - Use the Render URL you added to Vercel
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
@@ -34,6 +35,7 @@ function DashboardContent() {
     if (token) {
       localStorage.setItem("github_token", token);
       window.history.replaceState({}, document.title, "/dashboard");
+      toast.success("Successfully authenticated with GitHub");
     } else if (!localStorage.getItem("github_token")) {
       window.location.href = "/";
     }
@@ -51,6 +53,7 @@ function DashboardContent() {
       setData(res.data);
       fetchAIHistory(res.data.user.id);
     } catch (err) {
+      toast.error("Failed to load dashboard data");
       console.error("Dashboard Sync Error", err);
     } finally {
       setLoading(false);
@@ -72,8 +75,9 @@ function DashboardContent() {
       await axios.delete(`${API_BASE_URL}/api/github/history/${id}`);
       setReports((prev) => prev.filter((r) => r.id !== id));
       if (aiReport?.id === id) setAiReport(null);
+      toast.success("Report deleted successfully");
     } catch (err) {
-      alert("Failed to delete report");
+      toast.error("Failed to delete report");
     }
   };
 
@@ -89,6 +93,7 @@ function DashboardContent() {
   const handleRunAI = async () => {
     setLoadingAI(true);
     const token = localStorage.getItem("github_token");
+    const toastId = toast.loading("Analyzing repository...");
     try {
       const res = await axios.post(`${API_BASE_URL}/api/github/analyze`, {
         repoName: data.activeRepo.name,
@@ -99,7 +104,9 @@ function DashboardContent() {
       });
       setAiReport(res.data);
       fetchAIHistory(data.user.id);
+      toast.success("AI Analysis complete!", { id: toastId });
     } catch (err) {
+      toast.error("AI Analysis failed", { id: toastId });
       console.error("AI Analysis Failed", err);
     } finally {
       setLoadingAI(false);
@@ -116,46 +123,56 @@ function DashboardContent() {
       setData(res.data); 
       setAiReport(null);
       setActiveTab("analytics");
+    } catch (e) {
+      toast.error("Could not fetch repo details");
     } finally {
       setLoading(false);
     }
   };
 
   if (loading || !data) return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#020617]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-indigo-400 font-mono text-xs animate-pulse">Analyzing Intelligence...</p>
+    <div className="h-screen w-full flex items-center justify-center bg-slate-950">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-l-purple-500 rounded-full animate-[spin_2s_linear_infinite]"></div>
+        </div>
+        <p className="text-slate-400 font-mono text-sm animate-pulse tracking-widest uppercase">Initializing Intelligence</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex bg-[#020617] min-h-screen text-white overflow-hidden">
+    <div className="flex bg-slate-950 min-h-screen text-slate-50 overflow-hidden">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 h-screen overflow-y-auto custom-scrollbar">
+      <main className="flex-1 h-screen overflow-y-auto custom-scrollbar relative">
         <Header user={data?.user} />
-        <div className="p-8 max-w-7xl mx-auto">
+        
+        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
           {activeTab === "overview" && (
-            <div className="space-y-8 animate-in fade-in duration-700">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard title="Repositories" value={data.repos.length} type="repos" />
                 <StatsCard title="Followers" value={data.user.followers} type="followers" />
                 <StatsCard title="Public Gists" value={data.user.public_gists} type="gists" />
                 <StatsCard title="Health Score" value="88%" type="score" />
               </div>
-              <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6">
-                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                  <FiBarChart2 className="text-indigo-400" /> Platform Wide Tech Stack
-                </h3>
-                <Charts analytics={data.analytics} />
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FiBarChart2 className="text-indigo-400" /> Platform Wide Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Charts analytics={data.analytics} />
+                </CardContent>
+              </Card>
               <AIArchive reports={reports} onDelete={handleDeleteReport} onView={handleViewReport} />
             </div>
           )}
 
           {activeTab === "repos" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in zoom-in duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in duration-300">
               {data.repos.map((repo: any) => (
                 <RepoCard key={repo.id} repo={repo} onSelect={() => handleRepoSelect(repo.name)} />
               ))}
@@ -163,78 +180,87 @@ function DashboardContent() {
           )}
 
           {activeTab === "analytics" && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-              <div className="bg-gradient-to-br from-indigo-950/50 to-transparent p-8 rounded-[2rem] border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiGithub className="text-indigo-400" size={20} />
-                    <h2 className="text-2xl font-black">{data.activeRepo?.name}</h2>
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+              <Card className="bg-gradient-to-br from-indigo-900/40 via-slate-900/40 to-transparent border-indigo-500/20">
+                <CardContent className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-indigo-500/20 rounded-lg">
+                        <FiGithub className="text-indigo-400 w-6 h-6" />
+                      </div>
+                      <h2 className="text-3xl font-black tracking-tight">{data.activeRepo?.name}</h2>
+                    </div>
+                    <p className="text-slate-400 max-w-2xl mt-2">{data.activeRepo?.description || "No description provided for this repository."}</p>
                   </div>
-                  <p className="text-sm text-gray-400 line-clamp-2 max-w-2xl">{data.activeRepo?.description || "No description provided for this repository."}</p>
-                </div>
-                <button 
-                  onClick={handleRunAI}
-                  disabled={loadingAI}
-                  className="group relative px-8 py-4 bg-indigo-600 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <FiZap className={loadingAI ? "animate-spin" : "group-hover:text-yellow-300"} />
-                  {loadingAI ? "Analyzing..." : "Run AI Review"}
-                </button>
-              </div>
+                  <Button 
+                    size="lg"
+                    onClick={handleRunAI}
+                    disabled={loadingAI}
+                  >
+                    <FiZap className={loadingAI ? "animate-spin" : "text-yellow-400"} />
+                    {loadingAI ? "Analyzing..." : "Generate AI Insights"}
+                  </Button>
+                </CardContent>
+              </Card>
 
               {aiReport && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10 flex flex-col">
-                    <div className="text-center mb-6">
-                        <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Health Score</span>
-                        <div className="text-6xl font-black mt-1 text-white">{aiReport.health_score || aiReport.healthScore}</div>
-                        <div className="w-full h-1 bg-white/10 rounded-full mt-4 overflow-hidden">
-                            <div className="h-full bg-indigo-500" style={{ width: `${aiReport.health_score || aiReport.healthScore}%` }}></div>
+                  <Card className="flex flex-col border-indigo-500/30 shadow-[0_0_40px_-10px_rgba(99,102,241,0.2)]">
+                    <CardContent className="p-8 flex-1 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold mb-4">Health Score</span>
+                        <div className="relative flex items-center justify-center w-40 h-40">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${(aiReport.health_score || aiReport.healthScore || 0) * 2.83} 283`} className="text-indigo-500 transition-all duration-1000 ease-out" />
+                          </svg>
+                          <div className="absolute flex flex-col items-center justify-center">
+                            <span className="text-5xl font-black text-slate-100">{aiReport.health_score || aiReport.healthScore || 0}</span>
+                            <span className="text-xs text-slate-400 mt-1">/ 100</span>
+                          </div>
                         </div>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
-                            <FiInfo size={10} /> Score Calculation
-                        </h4>
-                        <div className="space-y-3 h-32 overflow-y-auto pr-2 custom-scrollbar text-[11px] text-gray-400 italic">
-                            <p className="border-l-2 border-indigo-500/30 pl-2">Calculated from <b>Tech Stack Diversity</b>.</p>
-                            <p className="border-l-2 border-indigo-500/30 pl-2">Weighted by <b>Commit Frequency</b>.</p>
-                        </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
-                  <div className="lg:col-span-2 space-y-4">
-                    <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10">
-                        <h3 className="text-xs font-bold text-indigo-300 mb-3 flex items-center gap-2">
-                            <FiActivity size={14} /> AI Executive Summary
+                  <div className="lg:col-span-2 flex flex-col gap-6">
+                    <Card className="flex-1">
+                      <CardContent className="p-6">
+                        <h3 className="text-sm font-bold text-indigo-400 mb-3 flex items-center gap-2">
+                            <FiActivity className="w-4 h-4" /> Executive Summary
                         </h3>
-                        <p className="text-sm text-gray-300 leading-relaxed font-medium">
+                        <p className="text-base text-slate-300 leading-relaxed">
                             {aiReport.report_text || aiReport.summary}
                         </p>
-                    </div>
-                    <div className="bg-indigo-500/5 p-6 rounded-2xl border border-indigo-500/20">
-                        <h3 className="text-xs font-bold text-green-400 mb-4 flex items-center gap-2">
-                            <FiCheckCircle size={14} /> Optimization Suggestions
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-emerald-500/5 border-emerald-500/20">
+                      <CardContent className="p-6">
+                        <h3 className="text-sm font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                            <FiCheckCircle className="w-4 h-4" /> Optimization Suggestions
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {(aiReport.suggestions || []).map((s: string, i: number) => (
-                                <div key={i} className="flex items-start gap-2 text-[11px] text-gray-400 bg-black/20 p-3 rounded-lg border border-white/5">
-                                    <span className="text-indigo-400 font-bold">#0{i+1}</span>
-                                    {s}
+                                <div key={i} className="flex items-start gap-3 bg-black/40 p-4 rounded-xl border border-white/[0.05]">
+                                    <span className="text-emerald-500 font-bold text-sm bg-emerald-500/10 w-6 h-6 flex items-center justify-center rounded-md shrink-0">{i+1}</span>
+                                    <span className="text-sm text-slate-300">{s}</span>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               )}
               
-              <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] p-6">
-                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                  <FiBarChart2 className="text-indigo-400" /> Active Repo Insights
-                </h3>
-                <Charts analytics={data.analytics} />
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FiBarChart2 className="text-indigo-400" /> Active Repo Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Charts analytics={data.analytics} />
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
@@ -243,12 +269,11 @@ function DashboardContent() {
   );
 }
 
-// 2. Wrap the logic in Suspense to fix the Vercel Build error
 export default function Dashboard() {
   return (
     <Suspense fallback={
-      <div className="h-screen w-full flex items-center justify-center bg-[#020617]">
-        <p className="text-indigo-400 font-mono text-xs animate-pulse">Loading Dashboard Content...</p>
+      <div className="h-screen w-full flex items-center justify-center bg-slate-950">
+        <p className="text-indigo-400 font-mono text-sm animate-pulse">Loading Application Shell...</p>
       </div>
     }>
       <DashboardContent />

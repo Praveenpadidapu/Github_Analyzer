@@ -1,5 +1,27 @@
 const pool = require("../config/db");
 const axios = require("axios");
+const { generateRepoReport } = require("../services/aiService");
+
+// Helper to fetch all pages from GitHub API
+const fetchAllPages = async (url, token) => {
+  let results = [];
+  let nextUrl = url;
+  
+  while (nextUrl) {
+    const res = await axios.get(nextUrl, { headers: { Authorization: `Bearer ${token}` } });
+    results = results.concat(res.data);
+    
+    // Check for 'next' page in Link header
+    const linkHeader = res.headers.link;
+    if (linkHeader && linkHeader.includes('rel="next"')) {
+      const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      nextUrl = match ? match[1] : null;
+    } else {
+      nextUrl = null;
+    }
+  }
+  return results;
+};
 
 const fetchGitHubData = async (req, res) => {
   const authHeader = req.headers.authorization;
@@ -9,16 +31,14 @@ const fetchGitHubData = async (req, res) => {
   if (!token) return res.status(401).json({ error: "No token provided" });
 
   try {
-    // 1. Fetch User and Repos
-    const [userRes, reposRes] = await Promise.all([
-      axios.get("https://api.github.com/user", { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get("https://api.github.com/user/repos?sort=updated&per_page=50", { headers: { Authorization: `Bearer ${token}` } })
-    ]);
-
+    // 1. Fetch User
+    const userRes = await axios.get("https://api.github.com/user", { headers: { Authorization: `Bearer ${token}` } });
     const user = userRes.data;
-    const repos = reposRes.data || [];
 
-    if (repos.length === 0) {
+    // 2. Fetch all Repositories
+    const repos = await fetchAllPages("https://api.github.com/user/repos?sort=updated&per_page=100", token);
+
+    if (!repos || repos.length === 0) {
       return res.json({ user, repos: [], activeRepo: null, analytics: { languages: [], commits: [] } });
     }
 
@@ -32,32 +52,39 @@ const fetchGitHubData = async (req, res) => {
       const owner = activeRepo.owner.login;
       const repoName = activeRepo.name;
 
-      // 2. FETCH DYNAMIC LANGUAGES (BYTES OF CODE)
+      // 3. FETCH LANGUAGES
       try {
         const langRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/languages`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        // Map the GitHub object { "JavaScript": 1234, "HTML": 567 } to the array format Recharts needs
         analytics.languages = Object.entries(langRes.data).map(([name, value]) => ({
           name,
-          value // The bytes of code
+          value
         }));
       } catch (e) {
         console.warn("Could not fetch languages for this repo.");
         analytics.languages = [];
       }
 
-      // 3. FETCH DYNAMIC COMMITS (LAST 10)
+      // 4. FETCH COMMITS (Last 100 for better heatmap)
       try {
-        const commitRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=10`, {
+        const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=100`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        analytics.commits = commitRes.data.map(c => ({
-          day: new Date(c.commit.author.date).toLocaleDateString('en-US', { weekday: 'short' }),
-          count: 1 
-        })).reverse();
+        
+        // Aggregate commits by day
+        const commitCounts = {};
+        commitsRes.data.forEach(c => {
+          const date = new Date(c.commit.author.date).toISOString().split('T')[0];
+          commitCounts[date] = (commitCounts[date] || 0) + 1;
+        });
+        
+        analytics.commits = Object.keys(commitCounts).map(date => ({
+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+          date,
+          count: commitCounts[date]
+        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
       } catch (e) {
         analytics.commits = [];
       }
@@ -70,12 +97,9 @@ const fetchGitHubData = async (req, res) => {
   }
 };
 
-// backend/src/controllers/githubController.js
-
 const runAIAnalysis = async (req, res) => {
   const { repoName, github_id, owner } = req.body;
   
-  // 1. Get the token from the headers sent by the frontend
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -84,27 +108,36 @@ const runAIAnalysis = async (req, res) => {
   }
 
   try {
-    // 2. Use the token to fetch repo details for the "Accurate" analysis
+    // 1. Fetch repo details for context
     const repoRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}`, {
-      headers: { Authorization: `Bearer ${token}` } // This fixes the 401
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    const { stargazers_count, open_issues_count, language, size } = repoRes.data;
+    const repoData = {
+      name: repoRes.data.name,
+      language: repoRes.data.language,
+      stars: repoRes.data.stargazers_count,
+      forks: repoRes.data.forks_count
+    };
 
-    // 3. Logic-based Scoring
-    let score = 80;
-    if (open_issues_count > 10) score -= 10;
-    if (stargazers_count > 5) score += 5;
-    const finalScore = Math.min(score, 99);
+    // 2. Fetch recent commits for context
+    let commitData = [];
+    try {
+      const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=10`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      commitData = commitsRes.data.map(c => ({
+        message: c.commit.message,
+        date: c.commit.author.date
+      }));
+    } catch(e) {
+      console.warn("Could not fetch commits for AI analysis");
+    }
 
-    const suggestions = [
-      `Optimize ${language || 'code'} for better performance.`,
-      `Resolve the ${open_issues_count} open issues.`,
-      "Add GitHub Actions for CI/CD.",
-      "Improve documentation coverage."
-    ];
+    // 3. Call Actual AI Service
+    const aiResult = await generateRepoReport(repoData, commitData);
 
-    const summary = `Accurate analysis for ${repoName}: Health score is ${finalScore}%. Found ${stargazers_count} stars and ${open_issues_count} issues.`;
+    const { healthScore, summary, suggestions } = aiResult;
 
     // 4. Save to Database
     const query = `
@@ -112,17 +145,17 @@ const runAIAnalysis = async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, NOW())
       RETURNING *;
     `;
-    const values = [String(github_id), repoName, summary, finalScore, JSON.stringify(suggestions)];
+    const values = [String(github_id), repoName, summary, healthScore, JSON.stringify(suggestions)];
     const result = await pool.query(query, values);
 
     res.json({ ...result.rows[0], suggestions });
 
   } catch (err) {
-    // Log the actual GitHub error to your backend terminal
     console.error("GitHub API Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Analysis failed due to GitHub API error" });
   }
 };
+
 const getSavedReports = async (req, res) => {
   const { github_id } = req.query;
   try {
